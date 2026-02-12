@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import toast from 'react-hot-toast';
 
 export default function AdminLogin() {
@@ -84,9 +85,9 @@ export default function AdminLogin() {
         </form>
 
         <div className="mt-6 text-center">
-          <a href="/" className="text-sm text-primary hover:underline">
+          <Link href="/" className="text-sm text-primary hover:underline">
             ← Back to Homepage
-          </a>
+          </Link>
         </div>
 
         <div className="mt-6 bg-gray-50 border border-gray-200 rounded-lg p-3">

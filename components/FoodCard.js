@@ -44,6 +44,7 @@ export default function FoodCard({ food, quantity, onUpdateQuantity }) {
           <div className="flex items-center justify-between pt-2">
             <div className="flex items-center space-x-3">
               <button
+                type="button"
                 onClick={() => onUpdateQuantity(food._id, -1)}
                 disabled={quantity === 0}
                 className="w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-xl font-bold transition"
@@ -52,6 +53,7 @@ export default function FoodCard({ food, quantity, onUpdateQuantity }) {
               </button>
               <span className="text-xl font-semibold w-8 text-center">{quantity}</span>
               <button
+                type="button"
                 onClick={() => onUpdateQuantity(food._id, 1)}
                 className="w-10 h-10 rounded-full bg-primary hover:bg-orange-600 text-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-xl font-bold transition"
               >

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import FoodCard from '@/components/FoodCard';
 import CheckoutModal from '@/components/CheckoutModal';
 import toast from 'react-hot-toast';
@@ -78,9 +79,9 @@ export default function Home() {
               <h1 className="text-3xl font-bold text-primary">🍔 FoodFest 2026</h1>
               <p className="text-gray-600 text-sm mt-1">Order Your Favorite Food Instantly</p>
             </div>
-            <a href="/admin" className="text-sm text-gray-500 hover:text-primary">
+            <Link href="/admin" className="text-sm text-gray-500 hover:text-primary">
               Admin
-            </a>
+            </Link>
           </div>
         </div>
       </header>
@@ -134,6 +135,7 @@ export default function Home() {
                 </p>
               </div>
               <button
+                type="button"
                 onClick={handleCheckout}
                 className="btn-primary"
               >

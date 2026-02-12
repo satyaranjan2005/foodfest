@@ -7,9 +7,8 @@ import { QRCodeSVG } from 'qrcode.react';
 
 export default function CheckoutModal({ cart, foods, totalAmount, onClose, onSuccess }) {
   const router = useRouter();
-  const [step, setStep] = useState(1); // 1: Details, 2: Payment, 3: Success
+  const [step, setStep] = useState(1); // 1: Details, 2: Payment
   const [customerName, setCustomerName] = useState('');
-  const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [orderDetails, setOrderDetails] = useState(null);
   const [paymentRedirected, setPaymentRedirected] = useState(false);
@@ -21,11 +20,6 @@ export default function CheckoutModal({ cart, foods, totalAmount, onClose, onSuc
     
     if (!customerName.trim()) {
       toast.error('Please enter your name');
-      return;
-    }
-    
-    if (!/^[6-9]\d{9}$/.test(phone)) {
-      toast.error('Please enter a valid 10-digit phone number');
       return;
     }
 
@@ -42,7 +36,6 @@ export default function CheckoutModal({ cart, foods, totalAmount, onClose, onSuc
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           customerName,
-          phone,
           items
         })
       });
@@ -70,12 +63,12 @@ export default function CheckoutModal({ cart, foods, totalAmount, onClose, onSuc
     // Open UPI app
     window.location.href = upiLink;
     setPaymentRedirected(true);
-    
-    // Show success screen after 10 seconds
-    setTimeout(() => {
-      setStep(3);
-      toast.success('Order placed successfully!');
-    }, 10000);
+  };
+
+  const handlePaymentComplete = () => {
+    toast.success('Order placed successfully!');
+    onSuccess();
+    router.push(`/order-success?orderId=${orderDetails.orderId}&name=${encodeURIComponent(customerName)}&amount=${totalAmount}`);
   };
 
 
@@ -94,9 +87,9 @@ export default function CheckoutModal({ cart, foods, totalAmount, onClose, onSuc
           <h2 className="text-2xl font-bold text-gray-800">
             {step === 1 && 'Checkout'}
             {step === 2 && 'Payment'}
-            {step === 3 && 'Success'}
           </h2>
           <button
+            type="button"
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700 text-2xl"
           >
@@ -136,20 +129,6 @@ export default function CheckoutModal({ cart, foods, totalAmount, onClose, onSuc
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold mb-2">Phone Number *</label>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className="input-field"
-                  placeholder="10-digit phone number"
-                  pattern="[6-9]\d{9}"
-                  maxLength="10"
-                  required
-                />
-              </div>
-
               <button
                 type="submit"
                 disabled={loading}
@@ -183,6 +162,7 @@ export default function CheckoutModal({ cart, foods, totalAmount, onClose, onSuc
               </div>
 
               <button
+                type="button"
                 onClick={handlePaymentRedirect}
                 disabled={paymentRedirected}
                 className="btn-primary w-full"
@@ -191,11 +171,32 @@ export default function CheckoutModal({ cart, foods, totalAmount, onClose, onSuc
               </button>
 
               {paymentRedirected && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
-                  <p className="text-sm text-yellow-800 font-semibold">
-                    Please complete the payment in your UPI app...
-                  </p>
-                </div>
+                <>
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
+                    <p className="text-sm text-yellow-800 font-semibold mb-2">
+                      Please complete the payment in your UPI app
+                    </p>
+                    <p className="text-xs text-yellow-700">
+                      After completing payment, click the button below
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handlePaymentComplete}
+                    className="btn-primary w-full"
+                  >
+                    I've Completed Payment
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="btn-secondary w-full"
+                  >
+                    Cancel
+                  </button>
+                </>
               )}
 
               {!paymentRedirected && (
@@ -207,6 +208,7 @@ export default function CheckoutModal({ cart, foods, totalAmount, onClose, onSuc
                   </div>
 
                   <button
+                    type="button"
                     onClick={onSuccess}
                     className="btn-secondary w-full"
                   >
@@ -214,116 +216,6 @@ export default function CheckoutModal({ cart, foods, totalAmount, onClose, onSuc
                   </button>
                 </>
               )}
-            </div>
-          )}
-
-          {/* Step 3: Success */}
-          {step === 3 && orderDetails && (
-            <div className="space-y-6 text-center">
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <p className="text-green-800 font-semibold">Order Created Successfully!</p>
-                <p className="text-2xl font-bold text-green-900 mt-2">{orderDetails.orderId}</p>
-              </div>
-
-              <div className="bg-orange-50 border border-orange-200 rounded-lg p-6">
-                <h3 className="font-bold text-lg mb-4">Pay ₹{totalAmount} via UPI</h3>
-                
-                <div className="flex justify-center mb-4">
-                  <QRCodeSVG
-                    value={`upi://pay?pa=${UPI_ID}&pn=FoodFest2026&am=${totalAmount}&cu=INR&tn=${orderDetails.orderId}`}
-                    size={200}
-                  />
-                </div>
-
-                <p className="text-sm text-gray-600 mb-2">Scan QR code or</p>
-                <p className="font-mono font-semibold text-primary">{UPI_ID}</p>
-              </div>
-
-              <button
-                onClick={handlePaymentRedirect}
-                disabled={paymentRedirected}
-                className="btn-primary w-full"
-              >
-                {paymentRedirected ? 'Processing...' : 'Open UPI App to Pay'}
-              </button>
-
-              {paymentRedirected && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
-                  <p className="text-sm text-yellow-800 font-semibold">
-                    Please complete the payment in your UPI app...
-                  </p>
-                </div>
-              )}
-
-              {!paymentRedirected && (
-                <>
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
-                    <p className="text-sm text-blue-800">
-                      After completing the payment, your order will be processed by our team.
-                    </p>
-                  </div>
-
-                  <button
-                    onClick={onSuccess}
-                    className="btn-secondary w-full"
-                  >
-                    Close
-                  </button>
-                </>
-              )}
-            </div>
-          )}
-
-          {/* Step 3: Success Screen */}
-          {step === 3 && orderDetails && (
-            <div className="space-y-6 text-center">
-              <div className="flex justify-center mb-4">
-                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center">
-                  <svg className="w-12 h-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path>
-                  </svg>
-                </div>
-              </div>
-
-              <div>
-                <h3 className="text-2xl font-bold text-gray-800 mb-2">Order Placed Successfully!</h3>
-                <p className="text-gray-600">Your order has been received</p>
-              </div>
-
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <p className="text-sm text-gray-600 mb-1">Order ID</p>
-                <p className="text-2xl font-bold text-green-900">{orderDetails.orderId}</p>
-              </div>
-
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <p className="text-sm text-blue-800">
-                  Your order will be prepared once the payment is verified by our team.
-                  Thank you for choosing FoodFest 2026!
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <p className="text-sm text-gray-600">Order Details:</p>
-                <div className="bg-gray-50 rounded-lg p-4 text-left">
-                  {getCartItems().map(({ food, quantity }) => (
-                    <div key={food._id} className="flex justify-between text-sm mb-2">
-                      <span>{food.name} × {quantity}</span>
-                      <span className="font-semibold">₹{food.price * quantity}</span>
-                    </div>
-                  ))}
-                  <div className="border-t pt-2 flex justify-between font-bold">
-                    <span>Total Paid</span>
-                    <span className="text-primary">₹{totalAmount}</span>
-                  </div>
-                </div>
-              </div>
-
-              <button
-                onClick={onSuccess}
-                className="btn-primary w-full"
-              >
-                Done
-              </button>
             </div>
           )}
         </div>

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import Order from '@/models/Order';
 import Food from '@/models/Food';
+import { emitSocketEvent } from '@/lib/socket';
 
 export async function POST(request) {
   try {
@@ -10,18 +11,9 @@ export async function POST(request) {
     const { customerName, phone, items } = await request.json();
     
     // Validation
-    if (!customerName || !phone || !items || items.length === 0) {
+    if (!customerName || !items || items.length === 0) {
       return NextResponse.json(
         { success: false, message: 'Please provide all required fields' },
-        { status: 400 }
-      );
-    }
-    
-    // Validate phone number
-    const phoneRegex = /^[6-9]\d{9}$/;
-    if (!phoneRegex.test(phone)) {
-      return NextResponse.json(
-        { success: false, message: 'Please provide a valid 10-digit phone number' },
         { status: 400 }
       );
     }
@@ -67,7 +59,7 @@ export async function POST(request) {
     // Create order
     const order = new Order({
       customerName,
-      phone,
+      ...(phone && { phone }),
       items: orderItems,
       totalAmount,
       paymentStatus: 'pending',
@@ -75,6 +67,9 @@ export async function POST(request) {
     });
     
     await order.save();
+    
+    // Emit socket event for real-time update
+    emitSocketEvent('new-order', order);
     
     return NextResponse.json({
       success: true,
