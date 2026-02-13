@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import FoodCard from '@/components/FoodCard';
 import CheckoutModal from '@/components/CheckoutModal';
 import toast from 'react-hot-toast';
@@ -76,12 +75,9 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold text-primary">🍔 FoodFest 2026</h1>
-              <p className="text-gray-600 text-sm mt-1">Order Your Favorite Food Instantly</p>
+              <h1 className="text-3xl font-bold text-primary">FoodFest 2026</h1>
+              <p className="text-gray-600 text-sm mt-1"></p>
             </div>
-            <Link href="/admin" className="text-sm text-gray-500 hover:text-primary">
-              Admin
-            </Link>
           </div>
         </div>
       </header>
@@ -90,11 +86,8 @@ export default function Home() {
       <section className="bg-gradient-to-r from-primary to-secondary text-white py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-4xl sm:text-5xl font-bold mb-4">
-            Welcome to FoodFest 2026! 🎉
+            Welcome to FoodFest 2026!
           </h2>
-          <p className="text-xl sm:text-2xl text-orange-100">
-            Delicious food, quick ordering, instant delivery
-          </p>
         </div>
       </section>
 
