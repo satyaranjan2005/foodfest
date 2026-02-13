@@ -89,12 +89,6 @@ export default function AdminLogin() {
             ← Back to Homepage
           </Link>
         </div>
-
-        <div className="mt-6 bg-gray-50 border border-gray-200 rounded-lg p-3">
-          <p className="text-xs text-gray-600 text-center">
-            Default password: <code className="bg-gray-200 px-2 py-1 rounded">admin123</code>
-          </p>
-        </div>
       </div>
     </div>
   );
