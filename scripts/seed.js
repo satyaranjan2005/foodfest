@@ -1,7 +1,7 @@
 // Seed script to populate initial food items with Firebase
 const { initializeApp, cert } = require('firebase-admin/app');
 const { getFirestore } = require('firebase-admin/firestore');
-require('dotenv').config({ path: '.env.local' });
+require('dotenv').config();
 
 const seedFoods = [
   {
