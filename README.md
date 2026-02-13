@@ -1,6 +1,6 @@
 # 🍔 FoodFest 2026 Ordering System
 
-A complete full-stack food ordering website built with **Next.js 14** (App Router), **MongoDB**, and **UPI payment integration**. This system is designed for college FoodFest events with simple UPI redirect payments (no payment gateway required).
+A complete full-stack food ordering website built with **Next.js 14** (App Router), **Firebase Firestore**, and **UPI payment integration**. This system is designed for college FoodFest events with simple UPI redirect payments (no payment gateway required).
 
 ## ✨ Features
 
@@ -34,7 +34,7 @@ A complete full-stack food ordering website built with **Next.js 14** (App Route
 
 - **Frontend**: Next.js 14 (App Router), React, Tailwind CSS
 - **Backend**: Next.js API Routes (serverless)
-- **Database**: MongoDB with Mongoose ODM
+- **Database**: Firebase Firestore
 - **Payments**: UPI Deep Links (no payment gateway)
 - **UI**: React Hot Toast, QRCode.react
 
@@ -76,11 +76,8 @@ foodfest-2026/
 ├── components/
 │   ├── FoodCard.js
 │   └── CheckoutModal.js
-├── models/
-│   ├── Food.js
-│   └── Order.js
 ├── lib/
-│   └── db.js
+│   └── db.js (Firebase configuration)
 ├── scripts/
 │   └── seed.js
 ├── package.json
@@ -94,7 +91,7 @@ foodfest-2026/
 ### Prerequisites
 
 - Node.js 18+ installed
-- MongoDB installed locally or MongoDB Atlas account
+- Firebase project with Firestore enabled (see [FIREBASE_SETUP.md](FIREBASE_SETUP.md))
 
 ### Installation
 
@@ -110,36 +107,35 @@ foodfest-2026/
 
 3. **Create environment file**:
    ```bash
-   copy .env.local.example .env.local
+   copy .env.example .env.local
    ```
 
-4. **Configure `.env.local`**:
+4. **Configure `.env.local`** (see [FIREBASE_SETUP.md](FIREBASE_SETUP.md) for detailed instructions):
    ```env
-   MONGODB_URI=mongodb://localhost:27017/foodfest2026
+   FIREBASE_PROJECT_ID=your-project-id
+   FIREBASE_CLIENT_EMAIL=your-client-email@your-project-id.iam.gserviceaccount.com
+   FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYour-Private-Key\n-----END PRIVATE KEY-----\n"
    ADMIN_PASSWORD=admin123
    UPI_ID=yourname@paytm
    NEXT_PUBLIC_UPI_ID=yourname@paytm
    NODE_ENV=development
    ```
 
-   **Important**: Replace `yourname@paytm` with your actual UPI ID!
+   **Important**: 
+   - Get Firebase credentials from Firebase Console (see [FIREBASE_SETUP.md](FIREBASE_SETUP.md))
+   - Replace `yourname@paytm` with your actual UPI ID!
 
-5. **Start MongoDB** (if using local):
+5. **Seed the database**:
    ```bash
-   mongod
+   npm run seed
    ```
 
-6. **Seed the database**:
-   ```bash
-   node scripts/seed.js
-   ```
-
-7. **Run the development server**:
+6. **Run the development server**:
    ```bash
    npm run dev
    ```
 
-8. **Open your browser**:
+7. **Open your browser**:
    - User Site: http://localhost:3000
    - Admin Panel: http://localhost:3000/admin
 
@@ -157,9 +153,9 @@ foodfest-2026/
 6. Admin verifies payment in dashboard
 7. Admin accepts order → marks as completed
 
-## 🗂️ Database Models
+## 🗂️ Firestore Collections
 
-### Food Model
+### Foods Collection
 ```javascript
 {
   name: String,
@@ -167,18 +163,19 @@ foodfest-2026/
   image: String,
   isAvailable: Boolean,
   stock: Number,
-  timestamps: true
+  createdAt: String (ISO date),
+  updatedAt: String (ISO date)
 }
 ```
 
-### Order Model
+### Orders Collection
 ```javascript
 {
   orderId: String, // Auto-generated (FF-001, FF-002, etc.)
   customerName: String,
   phone: String,
   items: [{
-    foodId: ObjectId,
+    foodId: String, // Firebase document ID
     foodName: String,
     quantity: Number,
     price: Number
@@ -187,7 +184,8 @@ foodfest-2026/
   paymentStatus: 'pending' | 'pending_verification' | 'paid' | 'rejected',
   orderStatus: 'placed' | 'accepted' | 'completed',
   utrNumber: String,
-  timestamps: true
+  createdAt: String (ISO date),
+  updatedAt: String (ISO date)
 }
 ```
 

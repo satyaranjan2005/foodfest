@@ -1,11 +1,9 @@
 import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/db';
-import Order from '@/models/Order';
+import getDb from '@/lib/db';
 
 export async function POST(request, { params }) {
   try {
-    await dbConnect();
-    
+    const db = getDb();
     const { id } = params;
     const { utrNumber } = await request.json();
     
@@ -17,27 +15,35 @@ export async function POST(request, { params }) {
     }
     
     // Check if UTR already exists
-    const existingOrder = await Order.findOne({ utrNumber: utrNumber.trim() });
-    if (existingOrder) {
+    const existingOrdersSnapshot = await db.collection('orders')
+      .where('utrNumber', '==', utrNumber.trim())
+      .get();
+    
+    if (!existingOrdersSnapshot.empty) {
       return NextResponse.json(
         { success: false, message: 'This UTR number has already been submitted' },
         { status: 400 }
       );
     }
     
-    const order = await Order.findById(id);
+    const orderRef = db.collection('orders').doc(id);
+    const orderDoc = await orderRef.get();
     
-    if (!order) {
+    if (!orderDoc.exists) {
       return NextResponse.json(
         { success: false, message: 'Order not found' },
         { status: 404 }
       );
     }
     
-    order.utrNumber = utrNumber.trim();
-    order.paymentStatus = 'pending_verification';
+    await orderRef.update({
+      utrNumber: utrNumber.trim(),
+      paymentStatus: 'pending_verification',
+      updatedAt: new Date().toISOString()
+    });
     
-    await order.save();
+    const updatedOrderDoc = await orderRef.get();
+    const order = { id: updatedOrderDoc.id, ...updatedOrderDoc.data() };
     
     return NextResponse.json({
       success: true,

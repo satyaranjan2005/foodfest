@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/db';
-import Food from '@/models/Food';
+import getDb from '@/lib/db';
 
 function checkAuth(request) {
   const authHeader = request.headers.get('authorization');
@@ -16,8 +15,7 @@ export async function PATCH(request, { params }) {
       );
     }
     
-    await dbConnect();
-    
+    const db = getDb();
     const { id } = params;
     const { stock } = await request.json();
     
@@ -28,23 +26,27 @@ export async function PATCH(request, { params }) {
       );
     }
     
-    const food = await Food.findById(id);
+    const foodRef = db.collection('foods').doc(id);
+    const foodDoc = await foodRef.get();
     
-    if (!food) {
+    if (!foodDoc.exists) {
       return NextResponse.json(
         { success: false, message: 'Food item not found' },
         { status: 404 }
       );
     }
     
-    food.stock = stock;
+    const updateData = { stock };
     
     // Auto set availability based on stock
     if (stock === 0) {
-      food.isAvailable = false;
+      updateData.isAvailable = false;
     }
     
-    await food.save();
+    await foodRef.update(updateData);
+    
+    const updatedFoodDoc = await foodRef.get();
+    const food = { id: updatedFoodDoc.id, ...updatedFoodDoc.data() };
     
     return NextResponse.json({
       success: true,

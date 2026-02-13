@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/db';
-import Order from '@/models/Order';
+import getDb from '@/lib/db';
 import { emitSocketEvent } from '@/lib/socket';
 
 function checkAuth(request) {
@@ -17,8 +16,7 @@ export async function PATCH(request, { params }) {
       );
     }
     
-    await dbConnect();
-    
+    const db = getDb();
     const { id } = params;
     const { status } = await request.json();
     
@@ -29,17 +27,23 @@ export async function PATCH(request, { params }) {
       );
     }
     
-    const order = await Order.findById(id);
+    const orderRef = db.collection('orders').doc(id);
+    const orderDoc = await orderRef.get();
     
-    if (!order) {
+    if (!orderDoc.exists) {
       return NextResponse.json(
         { success: false, message: 'Order not found' },
         { status: 404 }
       );
     }
     
-    order.orderStatus = status;
-    await order.save();
+    await orderRef.update({
+      orderStatus: status,
+      updatedAt: new Date().toISOString()
+    });
+    
+    const updatedOrderDoc = await orderRef.get();
+    const order = { id: updatedOrderDoc.id, ...updatedOrderDoc.data() };
     
     // Emit socket event for real-time update
     emitSocketEvent('order-updated', order);

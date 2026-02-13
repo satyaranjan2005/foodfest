@@ -1,17 +1,7 @@
-// Seed script to populate initial food items
-const mongoose = require('mongoose');
+// Seed script to populate initial food items with Firebase
+const { initializeApp, cert } = require('firebase-admin/app');
+const { getFirestore } = require('firebase-admin/firestore');
 require('dotenv').config({ path: '.env.local' });
-
-const FoodSchema = new mongoose.Schema({
-  name: String,
-  price: Number,
-  image: String,
-  isAvailable: Boolean
-}, {
-  timestamps: true
-});
-
-const Food = mongoose.models.Food || mongoose.model('Food', FoodSchema);
 
 const seedFoods = [
   {
@@ -26,27 +16,60 @@ const seedFoods = [
     image: '/img2.jpg',
     isAvailable: true
   },
-  
 ];
 
 async function seed() {
   try {
-    console.log('🌱 Connecting to MongoDB...');
-    await mongoose.connect(process.env.MONGODB_URI);
+    console.log('🌱 Initializing Firebase...');
     
-    console.log('✅ Connected to MongoDB');
+    // Initialize Firebase Admin SDK
+    if (process.env.FIREBASE_PRIVATE_KEY) {
+      initializeApp({
+        credential: cert({
+          projectId: process.env.FIREBASE_PROJECT_ID,
+          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+          privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+        }),
+      });
+    } else {
+      initializeApp({
+        projectId: process.env.FIREBASE_PROJECT_ID,
+      });
+    }
+    
+    const db = getFirestore();
+    console.log('✅ Connected to Firebase');
     
     // Clear existing data
-    await Food.deleteMany({});
+    const foodsSnapshot = await db.collection('foods').get();
+    const batch = db.batch();
+    foodsSnapshot.docs.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+    await batch.commit();
     console.log('🗑️  Cleared existing food items');
     
     // Insert seed data
-    await Food.insertMany(seedFoods);
+    const insertBatch = db.batch();
+    const timestamp = new Date().toISOString();
+    
+    seedFoods.forEach(food => {
+      const docRef = db.collection('foods').doc();
+      insertBatch.set(docRef, {
+        ...food,
+        createdAt: timestamp,
+        updatedAt: timestamp
+      });
+    });
+    
+    await insertBatch.commit();
     console.log('✅ Seed data inserted successfully!');
     
-    const foods = await Food.find({});
+    // Display inserted foods
+    const foods = await db.collection('foods').get();
     console.log('\n📋 Current food items:');
-    foods.forEach(food => {
+    foods.docs.forEach(doc => {
+      const food = doc.data();
       console.log(`   - ${food.name}: ₹${food.price}`);
     });
     

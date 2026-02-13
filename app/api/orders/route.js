@@ -1,12 +1,10 @@
 import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/db';
-import Order from '@/models/Order';
-import Food from '@/models/Food';
+import getDb from '@/lib/db';
 import { emitSocketEvent } from '@/lib/socket';
 
 export async function POST(request) {
   try {
-    await dbConnect();
+    const db = getDb();
     
     const { customerName, phone, items } = await request.json();
     
@@ -23,14 +21,16 @@ export async function POST(request) {
     
     // Validate each item and check availability
     for (const item of items) {
-      const food = await Food.findById(item.foodId);
+      const foodDoc = await db.collection('foods').doc(item.foodId).get();
       
-      if (!food) {
+      if (!foodDoc.exists) {
         return NextResponse.json(
           { success: false, message: `Food item not found: ${item.foodId}` },
           { status: 404 }
         );
       }
+      
+      const food = { id: foodDoc.id, ...foodDoc.data() };
       
       if (!food.isAvailable) {
         return NextResponse.json(
@@ -49,24 +49,33 @@ export async function POST(request) {
       totalAmount += food.price * item.quantity;
       
       orderItems.push({
-        foodId: food._id,
+        foodId: food.id,
         foodName: food.name,
         quantity: item.quantity,
         price: food.price
       });
     }
     
+    // Generate order ID
+    const ordersSnapshot = await db.collection('orders').get();
+    const orderCount = ordersSnapshot.size;
+    const orderId = `FF-${String(orderCount + 1).padStart(3, '0')}`;
+    
     // Create order
-    const order = new Order({
+    const orderData = {
+      orderId,
       customerName,
       ...(phone && { phone }),
       items: orderItems,
       totalAmount,
       paymentStatus: 'pending',
-      orderStatus: 'placed'
-    });
+      orderStatus: 'placed',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
     
-    await order.save();
+    const orderRef = await db.collection('orders').add(orderData);
+    const order = { id: orderRef.id, ...orderData };
     
     // Emit socket event for real-time update
     emitSocketEvent('new-order', order);

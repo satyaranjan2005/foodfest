@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/db';
-import Order from '@/models/Order';
+import getDb from '@/lib/db';
 
 function checkAuth(request) {
   const authHeader = request.headers.get('authorization');
@@ -16,11 +15,15 @@ export async function GET(request) {
       );
     }
     
-    await dbConnect();
+    const db = getDb();
+    const ordersSnapshot = await db.collection('orders')
+      .orderBy('createdAt', 'desc')
+      .get();
     
-    const orders = await Order.find({})
-      .populate('items.foodId')
-      .sort({ createdAt: -1 });
+    const orders = ordersSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
     
     return NextResponse.json({
       success: true,

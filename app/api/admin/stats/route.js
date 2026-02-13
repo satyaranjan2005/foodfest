@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/db';
-import Order from '@/models/Order';
+import getDb from '@/lib/db';
 
 function checkAuth(request) {
   const authHeader = request.headers.get('authorization');
@@ -16,15 +15,25 @@ export async function GET(request) {
       );
     }
     
-    await dbConnect();
+    const db = getDb();
     
-    const totalOrders = await Order.countDocuments();
-    const acceptedOrders = await Order.countDocuments({ orderStatus: 'accepted' });
-    const completedOrders = await Order.countDocuments({ orderStatus: 'completed' });
+    // Get all orders
+    const ordersSnapshot = await db.collection('orders').get();
+    const totalOrders = ordersSnapshot.size;
+    
+    const orders = ordersSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    
+    // Count by status
+    const acceptedOrders = orders.filter(order => order.orderStatus === 'accepted').length;
+    const completedOrders = orders.filter(order => order.orderStatus === 'completed').length;
     
     // Calculate total revenue from paid orders
-    const paidOrders = await Order.find({ paymentStatus: 'paid' });
-    const totalRevenue = paidOrders.reduce((sum, order) => sum + order.totalAmount, 0);
+    const totalRevenue = orders
+      .filter(order => order.paymentStatus === 'paid')
+      .reduce((sum, order) => sum + order.totalAmount, 0);
     
     return NextResponse.json({
       success: true,

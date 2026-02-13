@@ -1,12 +1,16 @@
 import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/db';
-import Food from '@/models/Food';
+import getDb from '@/lib/db';
 
 export async function GET() {
   try {
-    await dbConnect();
+    const db = getDb();
+    const foodsRef = db.collection('foods');
     
-    const foods = await Food.find({}).sort({ createdAt: 1 });
+    const snapshot = await foodsRef.orderBy('createdAt', 'asc').get();
+    const foods = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
     
     return NextResponse.json({
       success: true,
