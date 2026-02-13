@@ -1,49 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { io } from 'socket.io-client';
+import { useState } from 'react';
 
-let socket;
-
+// Simplified hook for Vercel deployment (no WebSocket)
+// Uses auto-refresh polling instead
 export function useSocket() {
-  const [isConnected, setIsConnected] = useState(false);
+  // Always return false since we're not using WebSockets on Vercel
+  const [isConnected] = useState(false);
 
-  useEffect(() => {
-    // Initialize socket connection
-    socket = io({
-      path: '/socket.io',
-      transports: ['websocket', 'polling']
-    });
-
-    socket.on('connect', () => {
-      console.log('Socket connected');
-      setIsConnected(true);
-      socket.emit('join-admin');
-    });
-
-    socket.on('disconnect', () => {
-      console.log('Socket disconnected');
-      setIsConnected(false);
-    });
-
-    return () => {
-      if (socket) {
-        socket.disconnect();
-      }
-    };
-  }, []);
-
-  const on = (event, callback) => {
-    if (socket) {
-      socket.on(event, callback);
-    }
-  };
-
-  const off = (event, callback) => {
-    if (socket) {
-      socket.off(event, callback);
-    }
-  };
+  // Dummy functions for compatibility
+  const on = () => {};
+  const off = () => {};
 
   return { isConnected, on, off };
 }

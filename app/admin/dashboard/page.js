@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { useSocket } from '@/hooks/useSocket';
+import { getClientDb } from '@/lib/firebaseClient';
+import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -12,7 +13,55 @@ export default function AdminDashboard() {
   const [foods, setFoods] = useState([]);
   const [loading, setLoading] = useState(true);
   const [autoRefresh, setAutoRefresh] = useState(true);
-  const { isConnected, on, off } = useSocket();
+  const [realtimeConnected, setRealtimeConnected] = useState(false);
+
+  // Real-time listener for orders
+  useEffect(() => {
+    const token = localStorage.getItem('adminToken');
+    if (!token) {
+      router.push('/admin');
+      return;
+    }
+
+    try {
+      const db = getClientDb();
+      const ordersQuery = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
+
+      // Listen for real-time updates
+      const unsubscribe = onSnapshot(
+        ordersQuery,
+        (snapshot) => {
+          const ordersData = [];
+          snapshot.forEach((doc) => {
+            ordersData.push({ id: doc.id, ...doc.data() });
+          });
+          
+          // Check if this is a new order (compare with existing orders)
+          if (orders.length > 0 && ordersData.length > orders.length) {
+            const newOrder = ordersData[0];
+            toast.success(`🔔 New order received: ${newOrder.orderId}`, {
+              duration: 5000,
+              icon: '🎉'
+            });
+          }
+          
+          setOrders(ordersData);
+          setRealtimeConnected(true);
+          console.log('✅ Real-time orders updated:', ordersData.length);
+        },
+        (error) => {
+          console.error('❌ Real-time listener error:', error);
+          setRealtimeConnected(false);
+          toast.error('Real-time connection lost. Using polling...');
+        }
+      );
+
+      return () => unsubscribe();
+    } catch (error) {
+      console.error('Failed to setup real-time listener:', error);
+      setRealtimeConnected(false);
+    }
+  }, [router]);
 
   useEffect(() => {
     // Check authentication
@@ -24,39 +73,15 @@ export default function AdminDashboard() {
 
     fetchData();
 
-    // Auto refresh every 5 seconds
+    // Auto refresh for stats and foods every 10 seconds (orders are real-time)
     const interval = setInterval(() => {
       if (autoRefresh) {
         fetchData(true);
       }
-    }, 5000);
+    }, 10000);
 
     return () => clearInterval(interval);
   }, [autoRefresh, router]);
-
-  // WebSocket real-time updates
-  useEffect(() => {
-    if (!isConnected) return;
-
-    const handleNewOrder = (order) => {
-      console.log('New order received:', order);
-      toast.success(`New order received: ${order.orderId}`);
-      fetchData(true);
-    };
-
-    const handleOrderUpdate = (order) => {
-      console.log('Order updated:', order);
-      fetchData(true);
-    };
-
-    on('new-order', handleNewOrder);
-    on('order-updated', handleOrderUpdate);
-
-    return () => {
-      off('new-order', handleNewOrder);
-      off('order-updated', handleOrderUpdate);
-    };
-  }, [isConnected, on, off]);
 
   const getAuthHeader = () => {
     const token = localStorage.getItem('adminToken');
@@ -67,19 +92,17 @@ export default function AdminDashboard() {
     try {
       if (!silent) setLoading(true);
 
-      const [statsRes, ordersRes, foodsRes] = await Promise.all([
+      const [statsRes, foodsRes] = await Promise.all([
         fetch('/api/admin/stats', { headers: getAuthHeader() }),
-        fetch('/api/admin/orders', { headers: getAuthHeader() }),
         fetch('/api/foods')
       ]);
 
       const statsData = await statsRes.json();
-      const ordersData = await ordersRes.json();
       const foodsData = await foodsRes.json();
 
       if (statsData.success) setStats(statsData.data);
-      if (ordersData.success) setOrders(ordersData.data);
       if (foodsData.success) setFoods(foodsData.data);
+      // Orders are handled by real-time listener
 
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -227,11 +250,11 @@ export default function AdminDashboard() {
               <p className="text-xs sm:text-sm text-gray-600">FoodFest 2026 Management</p>
             </div>
             <div className="flex flex-wrap items-center gap-2 sm:gap-4 w-full sm:w-auto">
-              {/* WebSocket Status */}
-              <div className="flex items-center gap-2 px-3 py-1 bg-gray-50 rounded-full">
-                <div className={`w-2 h-2 rounded-full animate-pulse ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+              {/* Real-time Status */}
+              <div className={`flex items-center gap-2 px-3 py-1 rounded-full border ${realtimeConnected ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'}`}>
+                <div className={`w-2 h-2 rounded-full ${realtimeConnected ? 'bg-green-500 animate-pulse' : 'bg-yellow-500 animate-pulse'}`}></div>
                 <span className="text-xs font-medium text-gray-700">
-                  {isConnected ? '🟢 Live' : '🔴 Offline'}
+                  {realtimeConnected ? '⚡ Live Orders' : '🔄 Polling'}
                 </span>
               </div>
               <label className="flex items-center gap-2 text-xs sm:text-sm px-3 py-1 bg-gray-50 rounded-full cursor-pointer hover:bg-gray-100 transition">
@@ -241,7 +264,7 @@ export default function AdminDashboard() {
                   onChange={(e) => setAutoRefresh(e.target.checked)}
                   className="rounded text-primary"
                 />
-                <span className="hidden sm:inline">Auto-refresh (5s)</span>
+                <span className="hidden sm:inline">Auto-refresh stats</span>
                 <span className="sm:hidden">Auto</span>
               </label>
               <button type="button" onClick={handleLogout} className="btn-secondary text-sm">
