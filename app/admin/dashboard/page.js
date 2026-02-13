@@ -344,7 +344,7 @@ export default function AdminDashboard() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {foods.map(food => (
-              <div key={food._id} className="card hover:shadow-xl transition-all duration-300">
+              <div key={food.id} className="card hover:shadow-xl transition-all duration-300">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <h3 className="font-bold text-base sm:text-lg truncate">{food.name}</h3>
@@ -352,7 +352,7 @@ export default function AdminDashboard() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => handleToggleAvailability(food._id)}
+                    onClick={() => handleToggleAvailability(food.id)}
                     className={`px-3 sm:px-4 py-2 rounded-lg font-semibold text-xs sm:text-sm transition-all whitespace-nowrap ${
                       food.isAvailable
                         ? 'bg-green-100 text-green-800 hover:bg-green-200 hover:scale-105'
@@ -387,7 +387,7 @@ export default function AdminDashboard() {
               </div>
             ) : (
               orders.map(order => (
-              <div key={order._id} className="card hover:shadow-xl transition-all duration-300">
+              <div key={order.id} className="card hover:shadow-xl transition-all duration-300">
                 <div className="space-y-3">
                   {/* Order Header */}
                   <div className="flex items-start justify-between pb-3 border-b">
@@ -425,14 +425,14 @@ export default function AdminDashboard() {
                       <div className="flex gap-2">
                         <button
                           type="button"
-                          onClick={() => handleVerifyPayment(order._id)}
+                          onClick={() => handleVerifyPayment(order.id)}
                           className="flex-1 text-sm bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-semibold transition"
                         >
                           ✓ Mark Paid
                         </button>
                         <button
                           type="button"
-                          onClick={() => handleRejectPayment(order._id)}
+                          onClick={() => handleRejectPayment(order.id)}
                           className="flex-1 text-sm bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-semibold transition"
                         >
                           ✗ Reject
@@ -442,7 +442,7 @@ export default function AdminDashboard() {
                     {order.paymentStatus === 'paid' && order.orderStatus === 'placed' && (
                       <button
                         type="button"
-                        onClick={() => handleUpdateOrderStatus(order._id, 'accepted')}
+                        onClick={() => handleUpdateOrderStatus(order.id, 'accepted')}
                         className="w-full text-sm bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold transition"
                       >
                         ✓ Accept Order
@@ -451,7 +451,7 @@ export default function AdminDashboard() {
                     {order.orderStatus === 'accepted' && (
                       <button
                         type="button"
-                        onClick={() => handleUpdateOrderStatus(order._id, 'completed')}
+                        onClick={() => handleUpdateOrderStatus(order.id, 'completed')}
                         className="w-full text-sm bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg font-semibold transition"
                       >
                         ✓ Mark Complete
@@ -488,7 +488,7 @@ export default function AdminDashboard() {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-100">
                   {orders.map(order => (
-                    <tr key={order._id} className="hover:bg-gray-50 transition-colors">
+                    <tr key={order.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="font-bold text-primary">{order.orderId}</span>
                       </td>
@@ -524,14 +524,14 @@ export default function AdminDashboard() {
                             <>
                               <button
                                 type="button"
-                                onClick={() => handleVerifyPayment(order._id)}
+                                onClick={() => handleVerifyPayment(order.id)}
                                 className="text-sm bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg font-semibold transition whitespace-nowrap"
                               >
                                 ✓ Mark Paid
                               </button>
                               <button
                                 type="button"
-                                onClick={() => handleRejectPayment(order._id)}
+                                onClick={() => handleRejectPayment(order.id)}
                                 className="text-sm bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg font-semibold transition whitespace-nowrap"
                               >
                                 ✗ Reject
@@ -541,7 +541,7 @@ export default function AdminDashboard() {
                           {order.paymentStatus === 'paid' && order.orderStatus === 'placed' && (
                             <button
                               type="button"
-                              onClick={() => handleUpdateOrderStatus(order._id, 'accepted')}
+                              onClick={() => handleUpdateOrderStatus(order.id, 'accepted')}
                               className="text-sm bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg font-semibold transition whitespace-nowrap"
                             >
                               ✓ Accept Order
@@ -550,7 +550,7 @@ export default function AdminDashboard() {
                           {order.orderStatus === 'accepted' && (
                             <button
                               type="button"
-                              onClick={() => handleUpdateOrderStatus(order._id, 'completed')}
+                              onClick={() => handleUpdateOrderStatus(order.id, 'completed')}
                               className="text-sm bg-purple-500 hover:bg-purple-600 text-white px-3 py-1.5 rounded-lg font-semibold transition whitespace-nowrap"
                             >
                               ✓ Mark Complete
