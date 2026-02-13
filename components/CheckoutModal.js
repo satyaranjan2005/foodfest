@@ -75,9 +75,9 @@ export default function CheckoutModal({ cart, foods, totalAmount, onClose, onSuc
 
   const getCartItems = () => {
     return Object.entries(cart).map(([foodId, quantity]) => {
-      const food = foods.find(f => f._id === foodId);
+      const food = foods.find(f => f.id === foodId);
       return { food, quantity };
-    });
+    }).filter(item => item.food);
   };
 
   return (
@@ -105,7 +105,7 @@ export default function CheckoutModal({ cart, foods, totalAmount, onClose, onSuc
                 <h3 className="font-semibold text-lg mb-3">Order Summary</h3>
                 <div className="space-y-2 mb-4">
                   {getCartItems().map(({ food, quantity }) => (
-                    <div key={food._id} className="flex justify-between text-sm">
+                    <div key={food.id} className="flex justify-between text-sm">
                       <span>{food.name} × {quantity}</span>
                       <span className="font-semibold">₹{food.price * quantity}</span>
                     </div>

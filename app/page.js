@@ -56,7 +56,7 @@ export default function Home() {
 
   const getTotalAmount = () => {
     return Object.entries(cart).reduce((sum, [foodId, qty]) => {
-      const food = foods.find(f => f._id === foodId);
+      const food = foods.find(f => f.id === foodId);
       return sum + (food ? food.price * qty : 0);
     }, 0);
   };
@@ -111,11 +111,11 @@ export default function Home() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-24">
-            {foods.map(food => (
+            {foods.filter(food => food && food.id).map(food => (
               <FoodCard
-                key={food._id}
+                key={food.id}
                 food={food}
-                quantity={cart[food._id] || 0}
+                quantity={cart[food.id] || 0}
                 onUpdateQuantity={updateQuantity}
               />
             ))}
