@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import getDb from '@/lib/db';
 import { emitSocketEvent } from '@/lib/socket';
 
+export const dynamic = 'force-dynamic';
+
 function checkAuth(request) {
   const authHeader = request.headers.get('authorization');
   return authHeader === 'Bearer admin-authenticated';

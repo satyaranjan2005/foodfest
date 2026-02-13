@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import getDb from '@/lib/db';
 
+export const dynamic = 'force-dynamic';
+
 function checkAuth(request) {
   const authHeader = request.headers.get('authorization');
   return authHeader === 'Bearer admin-authenticated';
