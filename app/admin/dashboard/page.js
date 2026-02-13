@@ -23,45 +23,63 @@ export default function AdminDashboard() {
       return;
     }
 
-    try {
-      const db = getClientDb();
-      const ordersQuery = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
+    let unsubscribe;
+    
+    const setupListener = async () => {
+      try {
+        const db = getClientDb();
+        const ordersQuery = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
 
-      // Listen for real-time updates
-      const unsubscribe = onSnapshot(
-        ordersQuery,
-        (snapshot) => {
-          const ordersData = [];
-          snapshot.forEach((doc) => {
-            ordersData.push({ id: doc.id, ...doc.data() });
-          });
-          
-          // Check if this is a new order (compare with existing orders)
-          if (orders.length > 0 && ordersData.length > orders.length) {
-            const newOrder = ordersData[0];
-            toast.success(`🔔 New order received: ${newOrder.orderId}`, {
-              duration: 5000,
-              icon: '🎉'
+        // Listen for real-time updates
+        unsubscribe = onSnapshot(
+          ordersQuery,
+          (snapshot) => {
+            const ordersData = [];
+            let hasNewOrder = false;
+            
+            snapshot.docChanges().forEach((change) => {
+              if (change.type === 'added' && orders.length > 0) {
+                hasNewOrder = true;
+              }
             });
+            
+            snapshot.forEach((doc) => {
+              ordersData.push({ id: doc.id, ...doc.data() });
+            });
+            
+            // Notify about new orders
+            if (hasNewOrder && ordersData.length > 0) {
+              const newOrder = ordersData[0];
+              toast.success(`🔔 New order: ${newOrder.orderId}`, {
+                duration: 5000,
+                icon: '🎉'
+              });
+            }
+            
+            setOrders(ordersData);
+            setRealtimeConnected(true);
+            console.log('✅ Real-time orders updated:', ordersData.length);
+          },
+          (error) => {
+            console.error('❌ Real-time listener error:', error);
+            setRealtimeConnected(false);
+            toast.error('Real-time connection lost');
           }
-          
-          setOrders(ordersData);
-          setRealtimeConnected(true);
-          console.log('✅ Real-time orders updated:', ordersData.length);
-        },
-        (error) => {
-          console.error('❌ Real-time listener error:', error);
-          setRealtimeConnected(false);
-          toast.error('Real-time connection lost. Using polling...');
-        }
-      );
+        );
+      } catch (error) {
+        console.error('Failed to setup real-time listener:', error);
+        setRealtimeConnected(false);
+      }
+    };
 
-      return () => unsubscribe();
-    } catch (error) {
-      console.error('Failed to setup real-time listener:', error);
-      setRealtimeConnected(false);
-    }
-  }, [router]);
+    setupListener();
+
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
+  }, [router]); // Only depend on router, not orders
 
   useEffect(() => {
     // Check authentication
